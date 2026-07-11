@@ -37,6 +37,7 @@ dependencies:
   sqflite: ^2.4.3
   path: ^1.9.1
   provider: ^6.1.5+1
+  crypto: ^3.0.6
   intl: ^0.20.2
   shared_preferences: ^2.5.5
   path_provider: ^2.1.6
@@ -47,6 +48,10 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+  # FFI-based sqflite implementation so database tests can run on the
+  # desktop test host without needing a connected Android device/emulator.
+  sqflite_common_ffi: ^2.3.4+4
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
