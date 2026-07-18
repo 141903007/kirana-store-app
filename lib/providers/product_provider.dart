@@ -82,6 +82,19 @@ class ProductProvider extends ChangeNotifier {
     loadProducts();
   }
 
+  /// Resets every filter to its default, then applies exactly one — used
+  /// by Dashboard's stock-alert cards so jumping there never combines with
+  /// a stale filter left over from a previous visit to the Products list.
+  void applyQuickFilter({bool lowStockOnly = false, bool outOfStockOnly = false}) {
+    searchQuery = '';
+    categoryFilterId = null;
+    this.lowStockOnly = lowStockOnly;
+    this.outOfStockOnly = outOfStockOnly;
+    favoritesOnly = false;
+    includeInactive = false;
+    loadProducts();
+  }
+
   Future<({ProductModel product, List<ProductPriceVariantModel> variants})?>
       loadForEdit(int id) async {
     final product = await _productRepository.getById(id);

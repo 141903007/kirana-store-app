@@ -1,3 +1,5 @@
+import 'package:sqflite/sqflite.dart';
+
 import '../database/app_database.dart';
 import '../database/db_tables.dart';
 import '../models/product_model.dart';
@@ -134,6 +136,12 @@ class ProductRepository {
   /// (purchase, sale, manual correction) goes through here so
   /// stock_history stays the ledger of record and products.current_stock
   /// stays a derived rollup, never edited directly elsewhere.
+  ///
+  /// Pass [executor] (an in-progress `Transaction`) when the caller already
+  /// holds a transaction on the same database — sqflite serializes
+  /// transactions on one connection, so opening a second nested
+  /// `db.transaction()` here would deadlock waiting for the outer one to
+  /// finish.
   Future<void> adjustStock(
     int productId,
     double delta,
@@ -141,11 +149,10 @@ class ProductRepository {
     String? referenceType,
     int? referenceId,
     String? notes,
+    DatabaseExecutor? executor,
   }) async {
-    final db = await AppDatabase.instance.database;
-
-    await db.transaction((txn) async {
-      final rows = await txn.query(
+    Future<void> body(DatabaseExecutor db) async {
+      final rows = await db.query(
         ProductsTable.table,
         columns: [ProductsTable.currentStock],
         where: '${ProductsTable.id} = ?',
@@ -158,14 +165,14 @@ class ProductRepository {
       final resultingStock = currentStock + delta;
       final now = DateTime.now().toIso8601String();
 
-      await txn.update(
+      await db.update(
         ProductsTable.table,
         {ProductsTable.currentStock: resultingStock, ProductsTable.updatedAt: now},
         where: '${ProductsTable.id} = ?',
         whereArgs: [productId],
       );
 
-      await txn.insert(StockHistoryTable.table, {
+      await db.insert(StockHistoryTable.table, {
         StockHistoryTable.productId: productId,
         StockHistoryTable.changeType: changeType,
         StockHistoryTable.quantityChange: delta,
@@ -175,7 +182,11 @@ class ProductRepository {
         StockHistoryTable.notes: notes,
         StockHistoryTable.createdAt: now,
       });
-    });
+    }
+
+    if (executor != null) return body(executor);
+    final db = await AppDatabase.instance.database;
+    await db.transaction((txn) => body(txn));
   }
 
   /// One query with a LEFT JOIN to each product's default active variant,

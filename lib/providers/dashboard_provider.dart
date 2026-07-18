@@ -1,10 +1,25 @@
 import 'package:flutter/material.dart';
 
 import '../models/dashboard_summary.dart';
+import '../repository/report_repository.dart';
 
-/// Feeds the Dashboard's stat cards. Currently always [DashboardSummary.zero]
-/// — a later module wires this to `report_repository.getTodaySummary()` and
-/// adds a `loadToday()` method, without the Dashboard screen itself changing.
+/// Feeds the Dashboard's stat cards from `report_repository.getTodaySummary()`.
 class DashboardProvider extends ChangeNotifier {
+  DashboardProvider({ReportRepository? reportRepository})
+      : _reportRepository = reportRepository ?? ReportRepository();
+
+  final ReportRepository _reportRepository;
+
   DashboardSummary summary = DashboardSummary.zero();
+  bool isLoading = false;
+
+  Future<void> loadToday() async {
+    isLoading = true;
+    notifyListeners();
+
+    summary = await _reportRepository.getTodaySummary();
+
+    isLoading = false;
+    notifyListeners();
+  }
 }

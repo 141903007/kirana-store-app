@@ -1,8 +1,12 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/product_unit.dart';
 import '../../providers/product_provider.dart';
+import '../../services/pdf_service.dart';
+import '../../utils/formatters.dart';
 import 'product_form_screen.dart';
 import 'widgets/product_filter_bar.dart';
 import 'widgets/product_list_tile.dart';
@@ -33,6 +37,38 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
     super.dispose();
   }
 
+  Future<void> _exportPdf(BuildContext context, ProductProvider provider) async {
+    final languageCode = context.locale.languageCode;
+    final totalValue = provider.items.fold<double>(
+      0,
+      (sum, item) => sum + (item.product.currentStock * item.product.purchasePrice),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (_) => PdfService.buildSimpleReportBytes(
+        title: 'reports.stock_report'.tr(),
+        columns: [
+          'products.name'.tr(),
+          'products.category'.tr(),
+          'products.current_stock'.tr(),
+          'reports.purchase_price_label'.tr(),
+        ],
+        rows: [
+          for (final item in provider.items)
+            [
+              item.product.name,
+              provider.categoryFor(item.product.categoryId)?.name ?? 'products.uncategorized'.tr(),
+              '${item.product.currentStock.toStringAsFixed(0)} ${item.product.baseUnit.displayLabel}',
+              Formatters.currency(item.product.purchasePrice),
+            ],
+        ],
+        languageCode: languageCode,
+        totalLabel: 'dashboard.stock_value'.tr(),
+        totalValue: Formatters.currency(totalValue),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ProductProvider>();
@@ -40,6 +76,12 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('nav.products'.tr()),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf_outlined),
+            onPressed: provider.items.isEmpty ? null : () => _exportPdf(context, provider),
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56),
           child: Padding(

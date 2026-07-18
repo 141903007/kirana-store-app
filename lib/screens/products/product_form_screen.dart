@@ -8,6 +8,7 @@ import '../../models/product_unit.dart';
 import '../../providers/product_provider.dart';
 import '../../utils/stock_breakdown.dart';
 import '../../utils/validators.dart';
+import '../stock/stock_history_screen.dart';
 import 'widgets/category_picker_field.dart';
 import 'widgets/opening_stock_input.dart';
 import 'widgets/price_variant_editor.dart';
@@ -218,12 +219,25 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       appBar: AppBar(
         title: Text(widget.isEditMode ? 'products.edit_product'.tr() : 'products.add_product'.tr()),
         actions: [
-          if (widget.isEditMode)
+          if (widget.isEditMode) ...[
+            IconButton(
+              icon: const Icon(Icons.history),
+              tooltip: 'stock.history_title'.tr(),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => StockHistoryScreen(
+                    productId: widget.productId!,
+                    productName: _nameController.text,
+                  ),
+                ),
+              ),
+            ),
             IconButton(
               icon: Icon(_isActive ? Icons.archive_outlined : Icons.unarchive_outlined),
               tooltip: _isActive ? 'products.deactivate'.tr() : 'products.reactivate'.tr(),
               onPressed: _confirmDeactivate,
             ),
+          ],
         ],
       ),
       body: SafeArea(

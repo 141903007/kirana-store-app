@@ -20,9 +20,15 @@ class AppDatabase {
     return _database ??= await _initDatabase();
   }
 
-  Future<Database> _initDatabase() async {
+  /// The on-disk path of the database file — used by [BackupService] to
+  /// read/overwrite the file directly. Nothing else should need this.
+  Future<String> get databasePath async {
     final databasesDir = await getDatabasesPath();
-    final dbPath = join(databasesDir, AppConstants.databaseName);
+    return join(databasesDir, AppConstants.databaseName);
+  }
+
+  Future<Database> _initDatabase() async {
+    final dbPath = await databasePath;
 
     return openDatabase(
       dbPath,

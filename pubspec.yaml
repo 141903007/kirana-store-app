@@ -44,6 +44,17 @@ dependencies:
   easy_localization: ^3.0.8
   flutter_localizations:
     sdk: flutter
+  pdf: ^3.11.3
+  printing: ^5.13.4
+  fl_chart: ^0.70.2
+  file_picker: ^8.3.7
+
+# file_picker 8.3.7's Android AAR was compiled against SDK 34, but the
+# latest flutter_plugin_android_lifecycle (a transitive dep, pulled in by
+# other plugins too) requires 36+, causing an AAR-metadata build failure.
+# Pin it back to a version compiled against SDK 34 to match.
+dependency_overrides:
+  flutter_plugin_android_lifecycle: 2.0.24
 
 dev_dependencies:
   flutter_test:
@@ -75,6 +86,7 @@ flutter:
   assets:
     - assets/translations/
     - assets/images/
+    - assets/fonts/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

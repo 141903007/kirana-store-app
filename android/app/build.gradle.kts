@@ -6,7 +6,10 @@ plugins {
 
 android {
     namespace = "com.smartkirana.smart_kirana_store"
-    compileSdk = flutter.compileSdkVersion
+    // file_picker's dependency (flutter_plugin_android_lifecycle) requires
+    // compiling against API 36+; pinned explicitly since
+    // flutter.compileSdkVersion resolves lower on this Flutter version.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
