@@ -204,6 +204,7 @@
     "invoice_number_label": "Invoice No.",
     "print_share_invoice": "Print / Share Invoice",
     "new_sale": "New Sale",
+    "done": "Done (Back to Dashboard)",
     "walk_in_customer": "Walk-in Customer",
     "customer_label": "Customer"
   },

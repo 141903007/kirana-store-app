@@ -57,11 +57,15 @@ void main() {
         notes: 'Damaged stock');
 
     final history = await stockHistoryRepository.getForProduct(productAId);
-    expect(history.length, 3);
+    // 4, not 3: insertProduct also seeds an "opening" entry for the 1000
+    // opening stock, ahead of the purchase/sale/adjustment entries below.
+    expect(history.length, 4);
     expect(history[0].changeType, StockChangeType.adjustment);
     expect(history[0].notes, 'Damaged stock');
     expect(history[0].resultingStock, 1350); // 1000+500-100-50
     expect(history[1].changeType, StockChangeType.sale);
     expect(history[2].changeType, StockChangeType.purchase);
+    expect(history[3].changeType, StockChangeType.opening);
+    expect(history[3].quantityChange, 1000);
   });
 }

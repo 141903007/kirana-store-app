@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../models/customer_model.dart';
 import '../../models/sale_model.dart';
 import '../../providers/customer_provider.dart';
+import '../../repository/sale_repository.dart';
 import '../../utils/formatters.dart';
 import 'customer_form_screen.dart';
 
@@ -18,9 +19,16 @@ class CustomerDetailScreen extends StatefulWidget {
 }
 
 class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
+  final _saleRepository = SaleRepository();
+
   CustomerModel? _customer;
   double _totalPurchaseAmount = 0;
   List<SaleModel> _history = [];
+
+  /// Line items per sale, keyed by sale id — loaded once alongside the
+  /// bill list so each invoice can show what was actually bought, not just
+  /// its total.
+  final Map<int, List<SaleItemDetail>> _itemsBySale = {};
 
   @override
   void initState() {
@@ -35,11 +43,22 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       provider.getTotalPurchaseAmount(widget.customerId),
       provider.getPurchaseHistory(widget.customerId),
     ]);
+    final history = results[2] as List<SaleModel>;
+
+    final itemLists = await Future.wait(
+      history.map((sale) => _saleRepository.getItemsForSale(sale.id!)),
+    );
+
     if (!mounted) return;
     setState(() {
       _customer = results[0] as CustomerModel?;
       _totalPurchaseAmount = results[1] as double;
-      _history = results[2] as List<SaleModel>;
+      _history = history;
+      _itemsBySale
+        ..clear()
+        ..addEntries(
+          Iterable.generate(history.length, (i) => MapEntry(history[i].id!, itemLists[i])),
+        );
     });
   }
 
@@ -143,7 +162,8 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                     for (final sale in _history)
                       Card(
                         margin: const EdgeInsets.only(bottom: 8),
-                        child: ListTile(
+                        clipBehavior: Clip.antiAlias,
+                        child: ExpansionTile(
                           title: Text(sale.invoiceNumber),
                           subtitle: Text(Formatters.date(DateTime.parse(sale.saleDate))),
                           trailing: Text(
@@ -153,6 +173,17 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                                 .titleMedium
                                 ?.copyWith(fontWeight: FontWeight.bold),
                           ),
+                          children: [
+                            for (final detail in _itemsBySale[sale.id] ?? <SaleItemDetail>[])
+                              ListTile(
+                                dense: true,
+                                title: Text(detail.productName),
+                                subtitle: Text(
+                                  '${detail.item.quantity.toStringAsFixed(2)} × ${detail.item.variantLabel} @ ${Formatters.currency(detail.item.unitSellingPrice)}',
+                                ),
+                                trailing: Text(Formatters.currency(detail.item.lineTotal)),
+                              ),
+                          ],
                         ),
                       ),
                 ],

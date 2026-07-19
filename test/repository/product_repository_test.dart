@@ -68,6 +68,18 @@ void main() {
     expect(variants.firstWhere((v) => v.label == '500g').isDefault, isTrue);
   });
 
+  test('insertProduct seeds an opening stock_history row for nonzero opening stock', () async {
+    final productId = await repository.insertProduct(_sugarProduct(currentStock: 1000));
+
+    final db = await AppDatabase.instance.database;
+    final history = await db.query(StockHistoryTable.table,
+        where: '${StockHistoryTable.productId} = ?', whereArgs: [productId]);
+    expect(history.length, 1);
+    expect(history.first[StockHistoryTable.changeType], StockChangeType.opening);
+    expect(history.first[StockHistoryTable.quantityChange], 1000);
+    expect(history.first[StockHistoryTable.resultingStock], 1000);
+  });
+
   test('adjustStock updates current_stock and writes a stock_history row', () async {
     final productId = await repository.insertProduct(_sugarProduct(currentStock: 1000));
 
@@ -77,8 +89,11 @@ void main() {
     expect(updated!.currentStock, 700);
 
     final db = await AppDatabase.instance.database;
-    final history = await db.query(StockHistoryTable.table,
-        where: '${StockHistoryTable.productId} = ?', whereArgs: [productId]);
+    final history = await db.query(
+      StockHistoryTable.table,
+      where: '${StockHistoryTable.productId} = ? AND ${StockHistoryTable.changeType} = ?',
+      whereArgs: [productId, StockChangeType.sale],
+    );
     expect(history.length, 1);
     expect(history.first[StockHistoryTable.quantityChange], -300);
     expect(history.first[StockHistoryTable.resultingStock], 700);

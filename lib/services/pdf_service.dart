@@ -138,8 +138,11 @@ class PdfService {
     return document.save();
   }
 
-  static Future<pw.ThemeData?> _themeFor(String languageCode) async {
-    if (languageCode != 'mr') return null;
+  /// Always applied, regardless of [languageCode] — the `pdf` package's
+  /// built-in base fonts (Helvetica etc.) only cover WinAnsi encoding, which
+  /// has no ₹ (Rupee sign) glyph at all, so English documents need this
+  /// bundled Unicode font just as much as Marathi ones do.
+  static Future<pw.ThemeData> _themeFor(String languageCode) async {
     final fontData = await rootBundle.load('assets/fonts/NotoSansDevanagari-Regular.ttf');
     final font = pw.Font.ttf(fontData);
     return pw.ThemeData.withFont(base: font, bold: font);

@@ -79,6 +79,14 @@ class SaleSuccessScreen extends StatelessWidget {
                     child: Text('billing.new_sale'.tr()),
                   ),
                 ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
+                    child: Text('billing.done'.tr()),
+                  ),
+                ),
               ],
             ),
           ),

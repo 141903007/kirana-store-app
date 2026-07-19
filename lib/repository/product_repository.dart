@@ -20,10 +20,32 @@ class ProductListItem {
 }
 
 class ProductRepository {
+  /// Also seeds a `stock_history` row for the opening stock (if nonzero) —
+  /// without this, the ledger's running sum would never account for how a
+  /// freshly-created product got its starting `current_stock`, and Stock
+  /// History would look incomplete on day one.
   Future<int> insertProduct(ProductModel product) async {
     final db = await AppDatabase.instance.database;
-    final map = product.toMap()..remove(ProductsTable.id);
-    return db.insert(ProductsTable.table, map);
+
+    return db.transaction<int>((txn) async {
+      final map = product.toMap()..remove(ProductsTable.id);
+      final productId = await txn.insert(ProductsTable.table, map);
+
+      if (product.openingStock != 0) {
+        await txn.insert(StockHistoryTable.table, {
+          StockHistoryTable.productId: productId,
+          StockHistoryTable.changeType: StockChangeType.opening,
+          StockHistoryTable.quantityChange: product.openingStock,
+          StockHistoryTable.resultingStock: product.openingStock,
+          StockHistoryTable.referenceType: null,
+          StockHistoryTable.referenceId: null,
+          StockHistoryTable.notes: null,
+          StockHistoryTable.createdAt: product.createdAt,
+        });
+      }
+
+      return productId;
+    });
   }
 
   /// Never touches current_stock/opening_stock — those only change via
